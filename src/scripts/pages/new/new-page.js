@@ -1,122 +1,66 @@
 import NewPresenter from './new-presenter';
 import { convertBase64ToBlob } from '../../utils';
-import * as CityCareAPI from '../../data/api';
+import * as StorySharingAPI from '../../data/api';
 import { generateLoaderAbsoluteTemplate } from '../../templates';
 import Camera from '../../utils/camera';
 import Map from '../../utils/map';
 
 export default class NewPage {
-  #presenter = null;
-  #form = null;
-  #camera = null;
+  #presenter;
+  #form;
+  #camera;
   #isCameraOpen = false;
   #takenDocumentations = [];
   #map = null;
 
   async render() {
     return `
-      <section>
-        <div class="new-report__header">
+      <section aria-labelledby="new-post-heading">
+        <div class="new-post__header">
           <div class="container">
-            <h1 class="new-report__header__title">Buat Laporan Baru</h1>
-            <p class="new-report__header__description">
-              Silakan lengkapi formulir di bawah untuk membuat laporan baru.<br>
-              Pastikan laporan yang dibuat adalah valid.
+            <h1 id="new-post-heading" class="new-post__header__title">Buat Post Baru</h1>
+            <p class="new-post__header__description" id="new-post-desc">
+              Ayo post cerita baru yang kamu miliki!<br>
             </p>
           </div>
         </div>
       </section>
-    
-      <section class="container">
+  
+      <section class="container" aria-describedby="new-post-desc">
         <div class="new-form__container">
-          <form id="new-form" class="new-form">
-            <div class="form-control">
-              <label for="title-input" class="new-form__title__title">Judul Laporan</label>
-    
-              <div class="new-form__title__container">
-                <input
-                  id="title-input"
-                  name="title"
-                  placeholder="Masukkan judul laporan"
-                  aria-describedby="title-input-more-info"
-                >
-              </div>
-              <div id="title-input-more-info">Pastikan judul laporan dibuat dengan jelas dan deskriptif dalam 1 kalimat.</div>
-            </div>
-            <div class="form-control">
-              <div class="new-form__damage-level__title">Tingkat Kerusakan</div>
-    
-              <div class="new-form__damage-level__container">
-                <div class="new-form__damage-level__minor__container">
-                  <input id="damage-level-minor-input" type="radio" name="damageLevel" value="minor">
-                  <label for="damage-level-minor-input">
-                    Rendah
-                    <span title="Contoh: Lubang kecil di jalan, kerusakan ringan pada tanda lalu lintas, dll.">
-                      <i class="far fa-question-circle"></i>
-                    </span>
-                  </label>
-                </div>
-                <div class="new-form__damage-level__moderate__container">
-                  <input id="damage-level-moderate-input" type="radio" name="damageLevel" value="moderate">
-                  <label for="damage-level-moderate-input">
-                    Sedang
-                    <span title="Contoh: Jalan retak besar, trotoar amblas, lampu jalan mati, dll.">
-                      <i class="far fa-question-circle"></i>
-                    </span>
-                  </label>
-                </div>
-                <div class="new-form__damage-level__severe__container">
-                  <input id="damage-level-severe-input" type="radio" name="damageLevel" value="severe">
-                  <label for="damage-level-severe-input">
-                    Berat
-                    <span title="Contoh: Jembatan ambruk, tiang listrik roboh, longsor yang menutup jalan, dll.">
-                      <i class="far fa-question-circle"></i>
-                    </span>
-                  </label>
-                </div>
-              </div>
-            </div>
-            <div class="form-control">
-              <label for="description-input" class="new-form__description__title">Keterangan</label>
-    
-              <div class="new-form__description__container">
-                <textarea
-                  id="description-input"
-                  name="description"
-                  placeholder="Masukkan keterangan lengkap laporan. Anda dapat menjelaskan apa kejadiannya, dimana, kapan, dll."
-                ></textarea>
-              </div>
-            </div>
-            <div class="form-control">
-              <label for="documentations-input" class="new-form__documentations__title">Dokumentasi</label>
-              <div id="documentations-more-info">Anda dapat menyertakan foto sebagai dokumentasi.</div>
-    
+          <form id="new-form" class="new-form" aria-label="Formulir Post Baru">
+
+            <!-- FOTO / GAMBAR -->
+            <fieldset class="form-control">
+              <legend id="documentations-label" class="new-form__documentations__title">Foto / Gambar</legend>
+
               <div class="new-form__documentations__container">
                 <div class="new-form__documentations__buttons">
-                  <button id="documentations-input-button" class="btn btn-outline" type="button">
-                    Ambil Gambar
-                  </button>
+                  <label for="documentations-input" class="btn btn-outline">Ambil Gambar</label>
+                  
                   <input
                     id="documentations-input"
                     name="documentations"
                     type="file"
                     accept="image/*"
                     multiple
-                    hidden="hidden"
-                    aria-multiline="true"
-                    aria-describedby="documentations-more-info"
+                    hidden
+                    aria-labelledby="documentations-label"
                   >
-                  <button id="open-documentations-camera-button" class="btn btn-outline" type="button">
+
+                  <button id="open-documentations-camera-button" class="btn btn-outline" type="button" aria-controls="camera-container">
                     Buka Kamera
                   </button>
                 </div>
-                <div id="camera-container" class="new-form__camera__container">
-                  <video id="camera-video" class="new-form__camera__video">
+
+                <div id="camera-container" class="new-form__camera__container" aria-live="polite">
+                  <video id="camera-video" class="new-form__camera__video" aria-label="Pratinjau kamera">
                     Video stream not available.
                   </video>
-                  <canvas id="camera-canvas" class="new-form__camera__canvas"></canvas>
-    
+                  <canvas id="camera-canvas" class="new-form__camera__canvas" aria-hidden="true"></canvas>
+
                   <div class="new-form__camera__tools">
+                    <label for="camera-select">Pilih Kamera</label>
                     <select id="camera-select"></select>
                     <div class="new-form__camera__tools_buttons">
                       <button id="camera-take-button" class="btn" type="button">
@@ -125,34 +69,52 @@ export default class NewPage {
                     </div>
                   </div>
                 </div>
-                <ul id="documentations-taken-list" class="new-form__documentations__outputs"></ul>
+
+                <ul id="documentations-taken-list" class="new-form__documentations__outputs" aria-live="polite"></ul>
+              </div>
+            </fieldset>
+
+            <!-- DESKRIPSI -->
+            <div class="form-control">
+              <label for="description-input" class="new-form__description__title">Deskripsi</label>
+              <div class="new-form__description__container">
+                <textarea
+                  id="description-input"
+                  name="description"
+                  placeholder="Tambahkan caption untuk foto mu atau ceritakan apa yang terjadi..."
+                  aria-describedby="description-info"
+                ></textarea>
+                <small id="description-info">Deskripsikan foto atau ceritamu dengan jelas.</small>
               </div>
             </div>
-            <div class="form-control">
-              <div class="new-form__location__title">Lokasi</div>
-    
+
+            <!-- LOKASI -->
+            <fieldset class="form-control">
+              <legend id="location-label" class="new-form__location__title">Lokasi</legend>
+              <p id="location-more-info">Bagikan tempat yang relevan dari cerita kamu...</p>
+  
               <div class="new-form__location__container">
                 <div class="new-form__location__map__container">
-                  <div id="map" class="new-form__location__map"></div>
-                  <div id="map-loading-container"></div>
+                  <div id="map" class="new-form__location__map" role="application" aria-label="Peta lokasi"></div>
+                  <div id="map-loading-container" aria-live="assertive"></div>
                 </div>
+
                 <div class="new-form__location__lat-lng">
-                  <div class="new-form__location__lat">
-                   <label for="latitude">Latitude</label>
-                   <input type="number" name="latitude" value="-6.175389">
-                  </div>
-                  <div class="new-form__location__lng">
-                    <label for="longitude">Longitude</label>
-                    <input type="number" name="longitude" value="106.827139">
-                  </div>
+                  <label for="lat-input">Latitude</label>
+                  <input id="lat-input" type="text" name="lat" value="-6.175389" disabled aria-labelledby="location-label">
+                  
+                  <label for="lon-input">Longitude</label>
+                  <input id="lon-input" type="text" name="lon" value="106.827139" disabled aria-labelledby="location-label">
                 </div>
               </div>
-            </div>
+            </fieldset>
+
+            <!-- TOMBOL -->
             <div class="form-buttons">
               <span id="submit-button-container">
                 <button class="btn" type="submit">Buat Laporan</button>
               </span>
-              <a class="btn btn-outline" href="#/">Batal</a>
+              <a class="btn btn-outline" href="#/" aria-label="Batalkan pembuatan post dan kembali ke halaman utama">Batal</a>
             </div>
           </form>
         </div>
@@ -163,7 +125,7 @@ export default class NewPage {
   async afterRender() {
     this.#presenter = new NewPresenter({
       view: this,
-      model: CityCareAPI,
+      model: StorySharingAPI,
     });
     this.#takenDocumentations = [];
 
@@ -177,14 +139,12 @@ export default class NewPage {
       event.preventDefault();
 
       const data = {
-        title: this.#form.elements.namedItem('title').value,
-        damageLevel: this.#form.elements.namedItem('damageLevel').value,
         description: this.#form.elements.namedItem('description').value,
-        evidenceImages: this.#takenDocumentations.map((picture) => picture.blob),
-        latitude: this.#form.elements.namedItem('latitude').value,
-        longitude: this.#form.elements.namedItem('longitude').value,
+        photo: this.#takenDocumentations[0]?.blob,
+        lat: parseFloat(this.#form.elements.namedItem('lat').value),
+        lon: parseFloat(this.#form.elements.namedItem('lon').value),
       };
-      await this.#presenter.postNewReport(data);
+      await this.#presenter.postNewStory(data);
     });
 
     document.getElementById('documentations-input').addEventListener('change', async (event) => {
@@ -196,7 +156,7 @@ export default class NewPage {
       await this.#populateTakenPictures();
     });
 
-    document.getElementById('documentations-input-button').addEventListener('click', () => {
+    document.getElementById('documentations-input').addEventListener('click', () => {
       this.#form.elements.namedItem('documentations-input').click();
     });
 
@@ -210,7 +170,7 @@ export default class NewPage {
         if (this.#isCameraOpen) {
           event.currentTarget.textContent = 'Tutup Kamera';
           this.#setupCamera();
-          this.#camera.launch();
+          await this.#camera.launch();
 
           return;
         }
@@ -226,32 +186,28 @@ export default class NewPage {
       locate: true,
     });
 
-    // Preparing marker for select coordinate
     const centerCoordinate = this.#map.getCenter();
-
-    this.#updateLatLngInput(centerCoordinate.latitude, centerCoordinate.longitude);
-
     const draggableMarker = this.#map.addMarker(
       [centerCoordinate.latitude, centerCoordinate.longitude],
       { draggable: 'true' },
     );
-
     draggableMarker.addEventListener('move', (event) => {
       const coordinate = event.target.getLatLng();
       this.#updateLatLngInput(coordinate.lat, coordinate.lng);
     });
-
     this.#map.addMapEventListener('click', (event) => {
       draggableMarker.setLatLng(event.latlng);
-
-      // Keep center
       event.sourceTarget.flyTo(event.latlng);
     });
   }
 
-  #updateLatLngInput(latitude, longitude) {
-    this.#form.elements.namedItem('latitude').value = latitude;
-    this.#form.elements.namedItem('longitude').value = longitude;
+  #updateLatLngInput(lat, lon) {
+    const latInput = this.#form?.elements.namedItem('lat');
+    const lonInput = this.#form?.elements.namedItem('lon');
+    if (!latInput || !lonInput) return;
+    
+    latInput.value = lat.toFixed(6);
+    lonInput.value = lon.toFixed(6);
   }
 
   #setupCamera() {
@@ -272,8 +228,7 @@ export default class NewPage {
 
   async #addTakenPicture(image) {
     let blob = image;
-
-    if (image instanceof String) {
+    if (typeof image === 'string') {
       blob = await convertBase64ToBlob(image, 'image/png');
     }
 
@@ -289,7 +244,7 @@ export default class NewPage {
       const imageUrl = URL.createObjectURL(picture.blob);
       return accumulator.concat(`
         <li class="new-form__documentations__outputs-item">
-          <button type="button" data-deletepictureid="${picture.id}" class="new-form__documentations__outputs-item__delete-btn">
+          <button type="button" data-deletepictureid="${picture.id}" class="new-form__documentations__outputs-item__delete-btn" aria-label="Hapus dokumentasi ke-${currentIndex + 1}">
             <img src="${imageUrl}" alt="Dokumentasi ke-${currentIndex + 1}">
           </button>
         </li>
@@ -301,42 +256,23 @@ export default class NewPage {
     document.querySelectorAll('button[data-deletepictureid]').forEach((button) =>
       button.addEventListener('click', (event) => {
         const pictureId = event.currentTarget.dataset.deletepictureid;
-
         const deleted = this.#removePicture(pictureId);
-        if (!deleted) {
-          console.log(`Picture with id ${pictureId} was not found`);
-        }
-
-        // Updating taken pictures
+        if (!deleted) console.log(`Picture with id ${pictureId} was not found`);
         this.#populateTakenPictures();
       }),
     );
   }
 
   #removePicture(id) {
-    const selectedPicture = this.#takenDocumentations.find((picture) => {
-      return picture.id == id;
-    });
-
-    // Check if founded selectedPicture is available
-    if (!selectedPicture) {
-      return null;
-    }
-
-    // Deleting selected selectedPicture from takenPictures
-    this.#takenDocumentations = this.#takenDocumentations.filter((picture) => {
-      return picture.id != selectedPicture.id;
-    });
-
+    const selectedPicture = this.#takenDocumentations.find((p) => p.id == id);
+    if (!selectedPicture) return null;
+    this.#takenDocumentations = this.#takenDocumentations.filter((p) => p.id != selectedPicture.id);
     return selectedPicture;
   }
 
   storeSuccessfully(message) {
     console.log(message);
     this.clearForm();
-
-    // Redirect page
-    location.hash = '/';
   }
 
   storeFailed(message) {
@@ -358,14 +294,14 @@ export default class NewPage {
   showSubmitLoadingButton() {
     document.getElementById('submit-button-container').innerHTML = `
       <button class="btn" type="submit" disabled>
-        <i class="fas fa-spinner loader-button"></i> Buat Laporan
+        <i class="fas fa-spinner loader-button" aria-hidden="true"></i> Buat Post
       </button>
     `;
   }
 
   hideSubmitLoadingButton() {
     document.getElementById('submit-button-container').innerHTML = `
-      <button class="btn" type="submit">Buat Laporan</button>
+      <button class="btn" type="submit">Buat Post</button>
     `;
   }
 }

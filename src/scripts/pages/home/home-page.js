@@ -1,12 +1,12 @@
 import {
   generateLoaderAbsoluteTemplate,
-  generateReportItemTemplate,
-  generateReportsListEmptyTemplate,
-  generateReportsListErrorTemplate,
+  generatePostItemTemplate,
+  generatePostsListEmptyTemplate,
+  generatePostsListErrorTemplate,
 } from '../../templates';
 import HomePresenter from './home-presenter';
 import Map from '../../utils/map';
-import * as CityCareAPI from '../../data/api';
+import * as StorySharingAPI from '../../data/api';
 
 export default class HomePage {
   #presenter = null;
@@ -14,68 +14,94 @@ export default class HomePage {
 
   async render() {
     return `
-      <section>
-        <div class="reports-list__map__container">
-          <div id="map" class="reports-list__map"></div>
-          <div id="map-loading-container"></div>
-        </div>
-      </section>
+      <main id="main-content">
+        <section 
+          class="posts-list__map__container" 
+          aria-labelledby="map-section-title" 
+          role="region">
+          <div 
+            id="map" 
+            class="posts-list__map" 
+            role="application" 
+            aria-label="Peta lokasi cerita pengguna">
+          </div>
+          <div id="map-loading-container" aria-live="polite"></div>
+        </section>
 
-      <section class="container">
-        <h1 class="section-title">Daftar Laporan Kerusakan</h1>
+        <section 
+          class="container" 
+          aria-labelledby="timeline-section-title" 
+          role="region">
+          <h1 id="timeline-section-title" class="section-title">Timeline</h1>
 
-        <div class="reports-list__container">
-          <div id="reports-list"></div>
-          <div id="reports-list-loading-container"></div>
-        </div>
-      </section>
+          <div 
+            class="posts-list__container" 
+            aria-live="polite" 
+            aria-busy="false">
+            <div id="posts-list"></div>
+            <div id="posts-list-loading-container"></div>
+          </div>
+        </section>
+      </main>
     `;
   }
 
   async afterRender() {
     this.#presenter = new HomePresenter({
       view: this,
-      model: CityCareAPI,
+      model: StorySharingAPI,
     });
 
     await this.#presenter.initialGalleryAndMap();
   }
 
-  populateReportsList(message, reports) {
-    if (reports.length <= 0) {
-      this.populateReportsListEmpty();
+  populatePostsList(message, posts) {
+    const storyList = posts?.listStory || posts || [];
+
+    if (!Array.isArray(storyList) || storyList.length === 0) {
+      this.populatePostsListEmpty();
       return;
     }
 
-    const html = reports.reduce((accumulator, report) => {
-      if (this.#map) {
-        const coordinate = [report.location.latitude, report.location.longitude];
-        const markerOptions = { alt: report.title };
-        const popupOptions = { content: report.title };
-
+    const html = storyList.reduce((accumulator, post) => {
+      if (this.#map && post.lat && post.lon) {
+        const coordinate = [post.lat, post.lon];
+        const markerOptions = { alt: post.name };
+        const popupOptions = { content: post.description };
         this.#map.addMarker(coordinate, markerOptions, popupOptions);
       }
 
       return accumulator.concat(
-        generateReportItemTemplate({
-          ...report,
-          placeNameLocation: report.location.placeName,
-          reporterName: report.reporter.name,
+        generatePostItemTemplate({
+          id: post.id,
+          posterName: post.name,
+          description: post.description,
+          photoUrl: post.photoUrl,
+          createdAt: post.createdAt,
+          lat: post.lat,
+          lon: post.lon,
+          location: post.location || null,
         }),
       );
     }, '');
 
-    document.getElementById('reports-list').innerHTML = `
-      <div class="reports-list">${html}</div>
+    const postsListContainer = document.getElementById('posts-list');
+    postsListContainer.innerHTML = `
+      <div class="posts-list" role="list">${html}</div>
     `;
+    postsListContainer.setAttribute('aria-busy', 'false');
   }
 
-  populateReportsListEmpty() {
-    document.getElementById('reports-list').innerHTML = generateReportsListEmptyTemplate();
+  populatePostsListEmpty() {
+    const container = document.getElementById('posts-list');
+    container.innerHTML = generatePostsListEmptyTemplate();
+    container.setAttribute('aria-busy', 'false');
   }
 
-  populateReportsListError(message) {
-    document.getElementById('reports-list').innerHTML = generateReportsListErrorTemplate(message);
+  populatePostsListError(message) {
+    const container = document.getElementById('posts-list');
+    container.innerHTML = generatePostsListErrorTemplate(message);
+    container.setAttribute('aria-busy', 'false');
   }
 
   async initialMap() {
@@ -86,19 +112,26 @@ export default class HomePage {
   }
 
   showMapLoading() {
-    document.getElementById('map-loading-container').innerHTML = generateLoaderAbsoluteTemplate();
+    const mapLoader = document.getElementById('map-loading-container');
+    mapLoader.innerHTML = generateLoaderAbsoluteTemplate();
+    mapLoader.setAttribute('aria-busy', 'true');
   }
 
   hideMapLoading() {
-    document.getElementById('map-loading-container').innerHTML = '';
+    const mapLoader = document.getElementById('map-loading-container');
+    mapLoader.innerHTML = '';
+    mapLoader.setAttribute('aria-busy', 'false');
   }
 
   showLoading() {
-    document.getElementById('reports-list-loading-container').innerHTML =
-      generateLoaderAbsoluteTemplate();
+    const postLoader = document.getElementById('posts-list-loading-container');
+    postLoader.innerHTML = generateLoaderAbsoluteTemplate();
+    postLoader.parentElement.setAttribute('aria-busy', 'true');
   }
 
   hideLoading() {
-    document.getElementById('reports-list-loading-container').innerHTML = '';
+    const postLoader = document.getElementById('posts-list-loading-container');
+    postLoader.innerHTML = '';
+    postLoader.parentElement.setAttribute('aria-busy', 'false');
   }
 }

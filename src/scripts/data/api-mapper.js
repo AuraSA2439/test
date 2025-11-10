@@ -1,14 +1,17 @@
 import Map from '../utils/map';
 
-export async function reportMapper(report) {
+export async function postMapper(post) {
+  const latitude = post.lat ?? post.location?.lat;
+  const longitude = post.lon ?? post.location?.lon;
+
+  const placeName = await Map.getPlaceNameByCoordinate(latitude, longitude);
+
   return {
-    ...report,
+    ...post,
     location: {
-      ...report.location,
-      placeName: await Map.getPlaceNameByCoordinate(
-        report.location.latitude,
-        report.location.longitude,
-      ),
+      lat: latitude,
+      lon: longitude,
+      placeName,
     },
   };
 }

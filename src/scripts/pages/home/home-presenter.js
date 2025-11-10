@@ -1,4 +1,4 @@
-import { reportMapper } from '../../data/api-mapper';
+import { postMapper } from '../../data/api-mapper';
 
 export default class HomePresenter {
   #view;
@@ -9,12 +9,12 @@ export default class HomePresenter {
     this.#model = model;
   }
 
-  async showReportsListMap() {
+  async showPostsListMap() {
     this.#view.showMapLoading();
     try {
       await this.#view.initialMap();
     } catch (error) {
-      console.error('showReportsListMap: error:', error);
+      console.error('showPostsListMap: error:', error);
     } finally {
       this.#view.hideMapLoading();
     }
@@ -23,22 +23,22 @@ export default class HomePresenter {
   async initialGalleryAndMap() {
     this.#view.showLoading();
     try {
-      await this.showReportsListMap();
+      await this.showPostsListMap();
 
-      const response = await this.#model.getAllReports();
+      const response = await this.#model.getAllPosts();
 
       if (!response.ok) {
         console.error('initialGalleryAndMap: response:', response);
-        this.#view.populateReportsListError(response.message);
+        this.#view.populatePostsListError(response.message);
         return;
       }
-
-      const reports = await Promise.all(response.data.map(reportMapper));
-
-      this.#view.populateReportsList(response.message, reports);
+      const mappedStories = await Promise.all(
+        (response.listStory || []).map((story) => postMapper(story))
+      );
+      this.#view.populatePostsList(response.message, { listStory: mappedStories });
     } catch (error) {
       console.error('initialGalleryAndMap: error:', error);
-      this.#view.populateReportsListError(error.message);
+      this.#view.populatePostsListError(error.message);
     } finally {
       this.#view.hideLoading();
     }

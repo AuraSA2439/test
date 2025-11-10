@@ -1,8 +1,8 @@
 import RegisterPage from '../pages/auth/register/register-page';
 import LoginPage from '../pages/auth/login/login-page';
 import HomePage from '../pages/home/home-page';
-import BookmarkPage from '../pages/bookmark/bookmark-page';
-import ReportDetailPage from '../pages/report-detail/report-detail-page';
+// import BookmarkPage from '../pages/bookmark/bookmark-page';
+// import PostDetailPage from '../pages/post-detail/post-detail-page';
 import NewPage from '../pages/new/new-page';
 import { checkAuthenticatedRoute, checkUnauthenticatedRouteOnly } from '../utils/auth';
 
@@ -12,6 +12,6 @@ export const routes = {
 
   '/': () => checkAuthenticatedRoute(new HomePage()),
   '/new': () => checkAuthenticatedRoute(new NewPage()),
-  '/reports/:id': () => checkAuthenticatedRoute(new ReportDetailPage()),
+  '/stories/:id': () => checkAuthenticatedRoute(new PostDetailPage()),
   '/bookmark': () => checkAuthenticatedRoute(new BookmarkPage()),
 };
