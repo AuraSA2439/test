@@ -3,10 +3,13 @@ import {
   generatePostItemTemplate,
   generatePostsListEmptyTemplate,
   generatePostsListErrorTemplate,
+  generatePostSaveButtonTemplate,
+  generatePostRemoveButtonTemplate,
 } from '../../templates';
 import HomePresenter from './home-presenter';
 import Map from '../../utils/map';
 import * as StorySharingAPI from '../../data/api';
+import Database from '../../data/database';
 
 export default class HomePage {
   #presenter = null;
@@ -50,6 +53,7 @@ export default class HomePage {
     this.#presenter = new HomePresenter({
       view: this,
       model: StorySharingAPI,
+      dbModel: Database,
     });
 
     await this.#presenter.initialGalleryAndMap();
@@ -90,6 +94,9 @@ export default class HomePage {
       <div class="posts-list" role="list">${html}</div>
     `;
     postsListContainer.setAttribute('aria-busy', 'false');
+    storyList.forEach((post) => {
+      this.#presenter.showSaveButton(post.id);
+    });
   }
 
   populatePostsListEmpty() {
@@ -133,5 +140,53 @@ export default class HomePage {
     const postLoader = document.getElementById('posts-list-loading-container');
     postLoader.innerHTML = '';
     postLoader.parentElement.setAttribute('aria-busy', 'false');
+  }
+
+  renderSaveButton(id) {
+    const container = document.getElementById(`save-container-${id}`);
+    if (!container) return;
+
+    container.innerHTML = generatePostSaveButtonTemplate();
+    const saveButton = container.querySelector('.post-item-save-button');
+    saveButton.addEventListener('click', async (event) => {
+      event.stopPropagation(); // Stop click from triggering post item click
+      event.preventDefault();
+      await this.#presenter.savePost(id);
+      this.#presenter.showSaveButton(id); // Re-check and render the correct button
+    });
+  }
+
+  renderRemoveButton(id) {
+    const container = document.getElementById(`save-container-${id}`);
+    if (!container) return;
+
+    container.innerHTML = generatePostRemoveButtonTemplate();
+    const removeButton = container.querySelector('.post-item-remove-button');
+    removeButton.addEventListener('click', async (event) => {
+      event.stopPropagation(); // Stop click from triggering post item click
+      event.preventDefault();
+      await this.#presenter.removePost(id);
+      this.#presenter.showSaveButton(id); // Re-check and render the correct button
+    });
+  }
+
+  saveToBookmarkSuccessfully(message) {
+    console.log(message);
+    // You could add a small toast/notification here if you wanted
+  }
+
+  saveToBookmarkFailed(message) {
+    console.error(message);
+    alert(message); // Or a toast/notification
+  }
+
+  removeFromBookmarkSuccessfully(message) {
+    console.log(message);
+    // You could add a small toast/notification here if you wanted
+  }
+
+  removeFromBookmarkFailed(message) {
+    console.error(message);
+    alert(message); // Or a toast/notification
   }
 }

@@ -2,7 +2,7 @@ import { getAccessToken } from '../utils/auth';
 import { BASE_URL } from '../config';
 
 const ENDPOINTS = {
-  // Auth
+  // Authentication
   REGISTER: `${BASE_URL}/register`,
   LOGIN: `${BASE_URL}/login`,
 
@@ -12,15 +12,12 @@ const ENDPOINTS = {
   STORE_NEW_STORY: `${BASE_URL}/stories`,
   STORE_NEW_STORY_GUEST: `${BASE_URL}/stories/guest`,
 
-  // Web Push Notifications
+  // Notifications
   SUBSCRIBE: `${BASE_URL}/notifications/subscribe`,
   UNSUBSCRIBE: `${BASE_URL}/notifications/subscribe`,
 };
 
-// =====================
-// AUTH SECTION
-// =====================
-
+// Authentication Functions
 export async function getRegistered({ name, email, password }) {
   const data = JSON.stringify({ name, email, password });
 
@@ -31,6 +28,7 @@ export async function getRegistered({ name, email, password }) {
   });
 
   const json = await fetchResponse.json();
+
   return {
     ...json,
     ok: fetchResponse.ok,
@@ -47,30 +45,39 @@ export async function getLogin({ email, password }) {
   });
 
   const json = await fetchResponse.json();
+
   return {
-    ok: fetchResponse.ok && !json.error,
-    message: json.message,
+    ...json,
+    ok: fetchResponse.ok,
     data: json.loginResult,
   };
 }
 
-// =====================
-// STORY SECTION
-// =====================
-
-export async function getAllPosts({ page, size, location } = {}) {
+export async function getMyUserInfo() {
   const accessToken = getAccessToken();
 
-  const url = new URL(ENDPOINTS.STORY_LIST);
-  if (page) url.searchParams.append('page', page);
-  if (size) url.searchParams.append('size', size);
-  if (location !== undefined) url.searchParams.append('location', location);
-
-  const fetchResponse = await fetch(url.toString(), {
+  const fetchResponse = await fetch(ENDPOINTS.MY_USER_INFO, {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
 
   const json = await fetchResponse.json();
+
+  return {
+    ...json,
+    ok: fetchResponse.ok,
+  };
+}
+
+// Story Functions
+export async function getAllPosts() {
+  const accessToken = getAccessToken();
+
+  const fetchResponse = await fetch(ENDPOINTS.STORY_LIST, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+
+  const json = await fetchResponse.json();
+
   return {
     ...json,
     ok: fetchResponse.ok,
@@ -85,20 +92,27 @@ export async function getPostById(id) {
   });
 
   const json = await fetchResponse.json();
+
   return {
     ...json,
     ok: fetchResponse.ok,
   };
 }
 
-export async function storeNewPost({ description, photo, lat, lon }) {
+export async function storeNewPost({
+  photo,
+  description,
+  lat,
+  lon,
+}) {
+
   const accessToken = getAccessToken();
   const formData = new FormData();
 
-  formData.append('description', description);
-  formData.append('photo', photo);
-  if (lat) formData.append('lat', lat);
-  if (lon) formData.append('lon', lon);
+  formData.set('photo', photo);
+  formData.set('description', description);
+  formData.set('lat', lat);
+  formData.set('lon', lon);
 
   const fetchResponse = await fetch(ENDPOINTS.STORE_NEW_STORY, {
     method: 'POST',
@@ -107,6 +121,7 @@ export async function storeNewPost({ description, photo, lat, lon }) {
   });
 
   const json = await fetchResponse.json();
+
   return {
     ...json,
     ok: fetchResponse.ok,
@@ -115,9 +130,8 @@ export async function storeNewPost({ description, photo, lat, lon }) {
 
 export async function storeNewPostGuest({ description, photo, lat, lon }) {
   const formData = new FormData();
-
-  formData.append('description', description);
   formData.append('photo', photo);
+  formData.append('description', description);
   if (lat) formData.append('lat', lat);
   if (lon) formData.append('lon', lon);
 
@@ -127,16 +141,14 @@ export async function storeNewPostGuest({ description, photo, lat, lon }) {
   });
 
   const json = await fetchResponse.json();
+
   return {
     ...json,
     ok: fetchResponse.ok,
   };
 }
 
-// =====================
-// WEB PUSH NOTIFICATIONS
-// =====================
-
+// Notification Functions
 export async function subscribePushNotification({ endpoint, keys: { p256dh, auth } }) {
   const accessToken = getAccessToken();
   const data = JSON.stringify({
@@ -148,12 +160,13 @@ export async function subscribePushNotification({ endpoint, keys: { p256dh, auth
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${accessToken}`,
+      'Authorization': `Bearer ${accessToken}`,
     },
     body: data,
   });
 
   const json = await fetchResponse.json();
+
   return {
     ...json,
     ok: fetchResponse.ok,
@@ -168,12 +181,13 @@ export async function unsubscribePushNotification({ endpoint }) {
     method: 'DELETE',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${accessToken}`,
+      'Authorization': `Bearer ${accessToken}`,
     },
     body: data,
   });
-
+  
   const json = await fetchResponse.json();
+
   return {
     ...json,
     ok: fetchResponse.ok,

@@ -3,10 +3,12 @@ import { postMapper } from '../../data/api-mapper';
 export default class HomePresenter {
   #view;
   #model;
+  #dbModel;
 
-  constructor({ view, model }) {
+  constructor({ view, model, dbModel }) {
     this.#view = view;
     this.#model = model;
+    this.#dbModel = dbModel;
   }
 
   async showPostsListMap() {
@@ -42,5 +44,38 @@ export default class HomePresenter {
     } finally {
       this.#view.hideLoading();
     }
+  }
+
+  async savePost(id) {
+    try {
+      const post = await this.#model.getPostById(id);
+      await this.#dbModel.putPost(post.story);
+      this.#view.saveToBookmarkSuccessfully('Success to save to bookmark');
+    } catch (error) {
+      console.error('savePost: error:', error);
+      this.#view.saveToBookmarkFailed(error.message);
+    }
+  }
+
+  async removePost(id) {
+    try {
+      await this.#dbModel.removePost(id);
+      this.#view.removeFromBookmarkSuccessfully('Success to remove from bookmark');
+    } catch (error) {
+      console.error('removePost: error:', error);
+      this.#view.removeFromBookmarkFailed(error.message);
+    }
+  }
+
+  async showSaveButton(id) {
+    if (await this.#isPostSaved(id)) {
+      this.#view.renderRemoveButton(id);
+      return;
+    }
+    this.#view.renderSaveButton(id);
+  }
+
+  async #isPostSaved(id) {
+    return !!(await this.#dbModel.getPostById(id));
   }
 }

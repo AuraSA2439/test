@@ -140,7 +140,7 @@ export default class NewPage {
 
       const data = {
         description: this.#form.elements.namedItem('description').value,
-        photo: this.#takenDocumentations[0]?.blob,
+        photo: this.#form.elements.namedItem('photo').value,
         lat: parseFloat(this.#form.elements.namedItem('lat').value),
         lon: parseFloat(this.#form.elements.namedItem('lon').value),
       };

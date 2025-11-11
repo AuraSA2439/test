@@ -6,20 +6,26 @@ import 'leaflet/dist/leaflet.css';
 
 // Components
 import App from './pages/app';
+import Camera from './utils/camera';
+import { registerServiceWorker } from './utils';
 
 document.addEventListener('DOMContentLoaded', async () => {
   const app = new App({
-    content: document.querySelector('#main-content'),
-    drawerButton: document.querySelector('#drawer-button'),
-    drawerNavigation: document.querySelector('#navigation-drawer'),
-    skipLinkButton: document.querySelector("#skip-link")
+    content: document.getElementById('main-content'),
+    drawerButton: document.getElementById('drawer-button'),
+    drawerNavigation: document.getElementById('navigation-drawer'),
+    skipLinkButton: document.getElementById('skip-link'),
   });
+
   await app.renderPage();
+  await registerServiceWorker();
+  // console.log('Berhasil mendaftarkan service worker.');
 
   window.addEventListener('hashchange', async () => {
     await app.renderPage();
+    // Stop all active media
+    Camera.stopAllStreams();
   });
 });
 
 document.body.style.backgroundColor = "#000000";
-// document.querySelector('footer').style.backgroundColor = "#16181c";

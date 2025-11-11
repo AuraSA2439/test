@@ -546,6 +546,9 @@ header {
 .post-item__author {
   border-bottom: #0B60B0 1px solid;
   padding-bottom: 8px;
+  display: flex;
+  justify-content: space-between;
+  height: fit-content;
 }
 
 h3 {
@@ -680,6 +683,17 @@ h3 {
 
   object-fit: contain;
   object-position: center;
+}
+
+#post-detail-save {
+  background-color: transparent;
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+.fa-heart {
+  color: white;
 }
 
 /* Tiny Slider */

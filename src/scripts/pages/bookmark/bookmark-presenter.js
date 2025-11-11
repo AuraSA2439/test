@@ -1,4 +1,4 @@
-import { reportMapper } from '../../data/api-mapper';
+import { postMapper } from '../../data/api-mapper';
 
 export default class BookmarkPresenter {
   #view;
@@ -9,33 +9,33 @@ export default class BookmarkPresenter {
     this.#model = model;
   }
 
-  async showReportsListMap() {
+  async showPostsListMap() {
     this.#view.showMapLoading();
     try {
       await this.#view.initialMap();
     } catch (error) {
-      console.error('showReportsListMap: error:', error);
+      console.error('showPostsListMap: error:', error);
     } finally {
       this.#view.hideMapLoading();
     }
   }
 
   async initialGalleryAndMap() {
-    this.#view.showReportsListLoading();
+    this.#view.showPostsListLoading();
 
     try {
-      await this.showReportsListMap();
+      await this.showPostsListMap();
 
-      const listOfReports = await this.#model.getAllReports();
-      const reports = await Promise.all(listOfReports.map(reportMapper));
+      const listOfPosts = await this.#model.getAllPosts();
+      const posts = await Promise.all(listOfPosts.map(postMapper));
 
-      const message = 'Berhasil mendapatkan daftar laporan tersimpan.';
-      this.#view.populateBookmarkedReports(message, reports);
+      const message = 'Berhasil mendapatkan daftar post tersimpan.';
+      this.#view.populateBookmarkedPosts(message, posts);
     } catch (error) {
       console.error('initialGalleryAndMap: error:', error);
-      this.#view.populateBookmarkedReportsError(error.message);
+      this.#view.populateBookmarkedPostsError(error.message);
     } finally {
-      this.#view.hideReportsListLoading();
+      this.#view.hidePostsListLoading();
     }
   }
 }
