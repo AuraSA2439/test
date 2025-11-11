@@ -16,15 +16,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     drawerNavigation: document.getElementById('navigation-drawer'),
     skipLinkButton: document.getElementById('skip-link'),
   });
-  await app.renderPage();
 
+  await app.renderPage();
   await registerServiceWorker();
-  console.log('Berhasil mendaftarkan service worker.');
+  // console.log('Berhasil mendaftarkan service worker.');
 
   window.addEventListener('hashchange', async () => {
     await app.renderPage();
-
     // Stop all active media
     Camera.stopAllStreams();
   });
 });
+
+document.body.style.backgroundColor = "#000000";

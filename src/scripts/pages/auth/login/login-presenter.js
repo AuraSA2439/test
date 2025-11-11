@@ -20,7 +20,9 @@ export default class LoginPresenter {
         return;
       }
 
-      this.#authModel.putAccessToken(response.data.accessToken);
+      // this.#authModel.putAccessToken(response.data.accessToken);
+      this.#authModel.putAccessToken(response.data.token);
+
 
       this.#view.loginSuccessfully(response.message, response.data);
     } catch (error) {

@@ -4,11 +4,12 @@ import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
 import markerShadow from 'leaflet/dist/images/marker-shadow.png';
 import { MAP_SERVICE_API_KEY } from '../config';
 
+
 export default class Map {
   #zoom = 5;
   #map = null;
 
-  static async getPlaceNameByCoordinate(latitude, longitude) {
+static async getPlaceNameByCoordinate(latitude, longitude) {
     try {
       const url = new URL(`https://api.maptiler.com/geocoding/${longitude},${latitude}.json`);
       url.searchParams.set('key', MAP_SERVICE_API_KEY);
@@ -17,7 +18,7 @@ export default class Map {
 
       const response = await fetch(url);
       const json = await response.json();
-
+      
       const place = json.features[0].place_name.split(', ');
       return [place.at(-2), place.at(-1)].map((name) => name).join(', ');
     } catch (error) {
@@ -25,22 +26,21 @@ export default class Map {
       return `${latitude}, ${longitude}`;
     }
   }
-
   static isGeolocationAvailable() {
     return 'geolocation' in navigator;
   }
-
+ 
   static getCurrentPosition(options = {}) {
     return new Promise((resolve, reject) => {
       if (!Map.isGeolocationAvailable()) {
         reject('Geolocation API unsupported');
         return;
       }
-
+ 
       navigator.geolocation.getCurrentPosition(resolve, reject, options);
     });
   }
-
+ 
   /**
    * Reference of using this static method:
    * https://stackoverflow.com/questions/43431550/how-can-i-invoke-asynchronous-code-within-a-constructor
@@ -49,43 +49,43 @@ export default class Map {
     if ('center' in options && options.center) {
       return new Map(selector, options);
     }
-
+ 
     const jakartaCoordinate = [-6.2, 106.816666];
-
+ 
     // Using Geolocation API
     if ('locate' in options && options.locate) {
       try {
         const position = await Map.getCurrentPosition();
         const coordinate = [position.coords.latitude, position.coords.longitude];
-
+ 
         return new Map(selector, {
           ...options,
           center: coordinate,
         });
       } catch (error) {
         console.error('build: error:', error);
-
+ 
         return new Map(selector, {
           ...options,
           center: jakartaCoordinate,
         });
       }
     }
-
+ 
     return new Map(selector, {
       ...options,
       center: jakartaCoordinate,
     });
   }
-
+ 
   constructor(selector, options = {}) {
     this.#zoom = options.zoom ?? this.#zoom;
-
+ 
     const tileOsm = tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution:
         '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a>',
     });
-
+ 
     this.#map = map(document.querySelector(selector), {
       zoom: this.#zoom,
       scrollWheelZoom: false,
@@ -99,7 +99,6 @@ export default class Map {
       this.#map.setView(latLng(coordinate), this.#zoom);
       return;
     }
-
     this.#map.setView(latLng(coordinate), zoomLevel);
   }
 
@@ -120,36 +119,27 @@ export default class Map {
       ...options,
     });
   }
-
   addMarker(coordinates, markerOptions = {}, popupOptions = null) {
     if (typeof markerOptions !== 'object') {
       throw new Error('markerOptions must be an object');
     }
-
     const newMarker = marker(coordinates, {
       icon: this.createIcon(),
-      alt: 'Marker',
       ...markerOptions,
     });
-
     if (popupOptions) {
       if (typeof popupOptions !== 'object') {
         throw new Error('popupOptions must be an object');
       }
-
-      const newPopup = popup(popupOptions);
-      newPopup.setLatLng(coordinates);
-      newPopup.setContent((layer) => {
-        return layer.options.alt;
-      });
+      if (!('content' in popupOptions)) {
+        throw new Error('popupOptions must include `content` property.');
+      }
+      const newPopup = popup(coordinates, popupOptions);
       newMarker.bindPopup(newPopup);
     }
-
     newMarker.addTo(this.#map);
-
     return newMarker;
   }
-
   addMapEventListener(eventName, callback) {
     this.#map.addEventListener(eventName, callback);
   }

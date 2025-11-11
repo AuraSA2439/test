@@ -1,146 +1,90 @@
-import { reportMapper } from '../../data/api-mapper';
+import { postMapper } from '../../data/api-mapper';
 
-export default class ReportDetailPresenter {
-  #reportId;
+export default class PostDetailPresenter {
+  #id;
   #view;
   #apiModel;
   #dbModel;
 
-  constructor(reportId, { view, apiModel, dbModel }) {
-    this.#reportId = reportId;
+  constructor(id, { view, apiModel, dbModel }) {
+    this.#id = id;
     this.#view = view;
     this.#apiModel = apiModel;
     this.#dbModel = dbModel;
   }
 
-  async showReportDetailMap() {
+  async showPostDetailMap() {
     this.#view.showMapLoading();
     try {
       await this.#view.initialMap();
     } catch (error) {
-      console.error('showReportDetailMap: error:', error);
+      console.error('showPostDetailMap: error:', error);
     } finally {
       this.#view.hideMapLoading();
     }
   }
 
-  async showReportDetail() {
-    this.#view.showReportDetailLoading();
+  async showPostDetail() {
+    this.#view.showPostDetailLoading();
     try {
-      const response = await this.#apiModel.getReportById(this.#reportId);
+      const response = await this.#apiModel.getPostById(this.#id);
 
       if (!response.ok) {
-        console.error('showReportDetail: response:', response);
-        this.#view.populateReportDetailError(response.message);
+        console.error('showPostDetail: response:', response);
+        this.#view.populatePostDetailError(response.message);
         return;
       }
 
-      const report = await reportMapper(response.data);
-      console.log(report); // for debugging purpose, remove after checking it
+      const post = await postMapper(response.story);
+      // console.log(post); // for debugging purpose, remove after checking it
 
-      this.#view.populateReportDetailAndInitialMap(response.message, report);
+      this.#view.populatePostDetailAndInitialMap(response.message, post);
     } catch (error) {
-      console.error('showReportDetail: error:', error);
-      this.#view.populateReportDetailError(error.message);
+      console.error('showPostDetail: error:', error);
+      this.#view.populatePostDetailError(error.message);
     } finally {
-      this.#view.hideReportDetailLoading();
-    }
-  }
-
-  async getCommentsList() {
-    this.#view.showCommentsLoading();
-    try {
-      const response = await this.#apiModel.getAllCommentsByReportId(this.#reportId);
-      this.#view.populateReportDetailComments(response.message, response.data);
-    } catch (error) {
-      console.error('getCommentsList: error:', error);
-      this.#view.populateCommentsListError(error.message);
-    } finally {
-      this.#view.hideCommentsLoading();
-    }
-  }
-
-  async postNewComment({ body }) {
-    this.#view.showSubmitLoadingButton();
-    try {
-      const response = await this.#apiModel.storeNewCommentByReportId(this.#reportId, { body });
-
-      if (!response.ok) {
-        console.error('postNewComment: response:', response);
-        this.#view.postNewCommentFailed(response.message);
-        return;
-      }
-
-      // No need to wait response
-      this.notifyReportOwner(response.data.id);
-
-      this.#view.postNewCommentSuccessfully(response.message, response.data);
-    } catch (error) {
-      console.error('postNewComment: error:', error);
-      this.#view.postNewCommentFailed(error.message);
-    } finally {
-      this.#view.hideSubmitLoadingButton();
-    }
-  }
-
-  async notifyReportOwner(commentId) {
-    try {
-      const response = await this.#apiModel.sendCommentToReportOwnerViaNotification(
-        this.#reportId,
-        commentId,
-      );
-
-      if (!response.ok) {
-        console.error('notifyReportOwner: response:', response);
-        return;
-      }
-
-      console.log('notifyReportOwner:', response.message);
-    } catch (error) {
-      console.error('notifyReportOwner: error:', error);
+      this.#view.hidePostDetailLoading();
     }
   }
 
   async notifyMe() {
     try {
-      const response = await this.#apiModel.sendReportToMeViaNotification(this.#reportId);
-
+      const response = await this.#apiModel.sendReportToMeViaNotification(this.#id);
       if (!response.ok) {
         console.error('notifyMe: response:', response);
         return;
       }
-
       console.log('notifyMe:', response.message);
     } catch (error) {
       console.error('notifyMe: error:', error);
     }
   }
 
-  async saveReport() {
+  async savePost() {
     try {
-      const report = await this.#apiModel.getReportById(this.#reportId);
-      await this.#dbModel.putReport(report.data);
+      const post = await this.#apiModel.getPostById(this.#id);
+      await this.#dbModel.putPost(post.story);
 
       this.#view.saveToBookmarkSuccessfully('Success to save to bookmark');
     } catch (error) {
-      console.error('saveReport: error:', error);
+      console.error('savePost: error:', error);
       this.#view.saveToBookmarkFailed(error.message);
     }
   }
 
-  async removeReport() {
+  async removePost() {
     try {
-      await this.#dbModel.removeReport(this.#reportId);
+      await this.#dbModel.removePost(this.#id);
 
       this.#view.removeFromBookmarkSuccessfully('Success to remove from bookmark');
     } catch (error) {
-      console.error('removeReport: error:', error);
+      console.error('removePost: error:', error);
       this.#view.removeFromBookmarkFailed(error.message);
     }
   }
 
   async showSaveButton() {
-    if (await this.#isReportSaved()) {
+    if (await this.#isPostSaved()) {
       this.#view.renderRemoveButton();
       return;
     }
@@ -148,7 +92,7 @@ export default class ReportDetailPresenter {
     this.#view.renderSaveButton();
   }
 
-  async #isReportSaved() {
-    return !!(await this.#dbModel.getReportById(this.#reportId));
+  async #isPostSaved() {
+    return !!(await this.#dbModel.getPostById(this.#id));
   }
 }

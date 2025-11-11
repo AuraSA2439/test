@@ -1,8 +1,8 @@
 import { openDB } from 'idb';
 
-const DATABASE_NAME = 'citycare';
+const DATABASE_NAME = 'umatter';
 const DATABASE_VERSION = 1;
-const OBJECT_STORE_NAME = 'saved-reports';
+const OBJECT_STORE_NAME = 'saved-posts';
 
 const dbPromise = openDB(DATABASE_NAME, DATABASE_VERSION, {
   upgrade: (database) => {
@@ -13,15 +13,15 @@ const dbPromise = openDB(DATABASE_NAME, DATABASE_VERSION, {
 });
 
 const Database = {
-  async putReport(report) {
-    if (!Object.hasOwn(report, 'id')) {
+  async putPost(post) {
+    if (!Object.hasOwn(post, 'id')) {
       throw new Error('`id` is required to save.');
     }
 
-    return (await dbPromise).add(OBJECT_STORE_NAME, report);
+    return (await dbPromise).add(OBJECT_STORE_NAME, post);
   },
 
-  async getReportById(id) {
+  async getPostById(id) {
     if (!id) {
       throw new Error('`id` is required.');
     }
@@ -29,11 +29,11 @@ const Database = {
     return (await dbPromise).get(OBJECT_STORE_NAME, id);
   },
 
-  async getAllReports() {
+  async getAllPosts() {
     return (await dbPromise).getAll(OBJECT_STORE_NAME);
   },
 
-  async removeReport(id) {
+  async removePost(id) {
     return (await dbPromise).delete(OBJECT_STORE_NAME, id);
   },
 };

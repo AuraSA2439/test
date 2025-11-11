@@ -6,11 +6,15 @@ import {
   generateUnauthenticatedNavigationListTemplate,
   generateUnsubscribeButtonTemplate,
 } from '../templates';
-import { isServiceWorkerAvailable, setupSkipToContent, transitionHelper } from '../utils';
+import { 
+  isServiceWorkerAvailable,
+  setupSkipToContent, 
+  transitionHelper 
+} from '../utils';
 import { getAccessToken, getLogout } from '../utils/auth';
 import { routes } from '../routes/routes';
-import {
-  isCurrentPushSubscriptionAvailable,
+import { 
+  isCurrentPushSubscriptionAvailable, 
   subscribe,
   unsubscribe,
 } from '../utils/notification-helper';
@@ -87,7 +91,6 @@ export default class App {
   async #setupPushNotification() {
     const pushNotificationTools = document.getElementById('push-notification-tools');
     const isSubscribed = await isCurrentPushSubscriptionAvailable();
-
     if (isSubscribed) {
       pushNotificationTools.innerHTML = generateUnsubscribeButtonTemplate();
       document.getElementById('unsubscribe-button').addEventListener('click', () => {
@@ -95,10 +98,9 @@ export default class App {
           this.#setupPushNotification();
         });
       });
-
       return;
     }
-
+    
     pushNotificationTools.innerHTML = generateSubscribeButtonTemplate();
     document.getElementById('subscribe-button').addEventListener('click', () => {
       subscribe().finally(() => {
@@ -109,9 +111,7 @@ export default class App {
 
   async renderPage() {
     const url = getActiveRoute();
-    console.log('url', url);
     const route = routes[url];
-    console.log('route', route);
 
     // Get page instance
     const page = route();
@@ -119,7 +119,6 @@ export default class App {
     const transition = transitionHelper({
       updateDOM: async () => {
         this.#content.innerHTML = await page.render();
-        console.log('isi halaman', await page.render());
         page.afterRender();
       },
     });

@@ -2,30 +2,22 @@ import { getAccessToken } from '../utils/auth';
 import { BASE_URL } from '../config';
 
 const ENDPOINTS = {
-  // Auth
+  // Authentication
   REGISTER: `${BASE_URL}/register`,
   LOGIN: `${BASE_URL}/login`,
-  MY_USER_INFO: `${BASE_URL}/users/me`,
 
-  // Report
-  REPORT_LIST: `${BASE_URL}/reports`,
-  REPORT_DETAIL: (id) => `${BASE_URL}/reports/${id}`,
-  STORE_NEW_REPORT: `${BASE_URL}/reports`,
+  // Story
+  STORY_LIST: `${BASE_URL}/stories`,
+  STORY_DETAIL: (id) => `${BASE_URL}/stories/${id}`,
+  STORE_NEW_STORY: `${BASE_URL}/stories`,
+  STORE_NEW_STORY_GUEST: `${BASE_URL}/stories/guest`,
 
-  // Report Comment
-  REPORT_COMMENTS_LIST: (reportId) => `${BASE_URL}/reports/${reportId}/comments`,
-  STORE_NEW_REPORT_COMMENT: (reportId) => `${BASE_URL}/reports/${reportId}/comments`,
-
-  // Report Comment
+  // Notifications
   SUBSCRIBE: `${BASE_URL}/notifications/subscribe`,
   UNSUBSCRIBE: `${BASE_URL}/notifications/subscribe`,
-  SEND_REPORT_TO_ME: (reportId) => `${BASE_URL}/reports/${reportId}/notify-me`,
-  SEND_REPORT_TO_USER: (reportId) => `${BASE_URL}/reports/${reportId}/notify`,
-  SEND_REPORT_TO_ALL_USER: (reportId) => `${BASE_URL}/reports/${reportId}/notify-all`,
-  SEND_COMMENT_TO_REPORT_OWNER: (reportId, commentId) =>
-    `${BASE_URL}/reports/${reportId}/comments/${commentId}/notify`,
 };
 
+// Authentication Functions
 export async function getRegistered({ name, email, password }) {
   const data = JSON.stringify({ name, email, password });
 
@@ -34,6 +26,7 @@ export async function getRegistered({ name, email, password }) {
     headers: { 'Content-Type': 'application/json' },
     body: data,
   });
+
   const json = await fetchResponse.json();
 
   return {
@@ -50,11 +43,13 @@ export async function getLogin({ email, password }) {
     headers: { 'Content-Type': 'application/json' },
     body: data,
   });
+
   const json = await fetchResponse.json();
 
   return {
     ...json,
     ok: fetchResponse.ok,
+    data: json.loginResult,
   };
 }
 
@@ -64,6 +59,7 @@ export async function getMyUserInfo() {
   const fetchResponse = await fetch(ENDPOINTS.MY_USER_INFO, {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
+
   const json = await fetchResponse.json();
 
   return {
@@ -72,12 +68,14 @@ export async function getMyUserInfo() {
   };
 }
 
-export async function getAllReports() {
+// Story Functions
+export async function getAllPosts() {
   const accessToken = getAccessToken();
 
-  const fetchResponse = await fetch(ENDPOINTS.REPORT_LIST, {
+  const fetchResponse = await fetch(ENDPOINTS.STORY_LIST, {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
+
   const json = await fetchResponse.json();
 
   return {
@@ -86,12 +84,13 @@ export async function getAllReports() {
   };
 }
 
-export async function getReportById(id) {
+export async function getPostById(id) {
   const accessToken = getAccessToken();
 
-  const fetchResponse = await fetch(ENDPOINTS.REPORT_DETAIL(id), {
+  const fetchResponse = await fetch(ENDPOINTS.STORY_DETAIL(id), {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
+
   const json = await fetchResponse.json();
 
   return {
@@ -100,31 +99,27 @@ export async function getReportById(id) {
   };
 }
 
-export async function storeNewReport({
-  title,
-  damageLevel,
+export async function storeNewPost({
+  photo,
   description,
-  evidenceImages,
-  latitude,
-  longitude,
+  lat,
+  lon,
 }) {
+
   const accessToken = getAccessToken();
-
   const formData = new FormData();
-  formData.set('title', title);
-  formData.set('damageLevel', damageLevel);
-  formData.set('description', description);
-  formData.set('latitude', latitude);
-  formData.set('longitude', longitude);
-  evidenceImages.forEach((evidenceImage) => {
-    formData.append('evidenceImages', evidenceImage);
-  });
 
-  const fetchResponse = await fetch(ENDPOINTS.STORE_NEW_REPORT, {
+  formData.set('photo', photo);
+  formData.set('description', description);
+  formData.set('lat', lat);
+  formData.set('lon', lon);
+
+  const fetchResponse = await fetch(ENDPOINTS.STORE_NEW_STORY, {
     method: 'POST',
     headers: { Authorization: `Bearer ${accessToken}` },
     body: formData,
   });
+
   const json = await fetchResponse.json();
 
   return {
@@ -133,32 +128,18 @@ export async function storeNewReport({
   };
 }
 
-export async function getAllCommentsByReportId(reportId) {
-  const accessToken = getAccessToken();
+export async function storeNewPostGuest({ description, photo, lat, lon }) {
+  const formData = new FormData();
+  formData.append('photo', photo);
+  formData.append('description', description);
+  if (lat) formData.append('lat', lat);
+  if (lon) formData.append('lon', lon);
 
-  const fetchResponse = await fetch(ENDPOINTS.REPORT_COMMENTS_LIST(reportId), {
-    headers: { Authorization: `Bearer ${accessToken}` },
-  });
-  const json = await fetchResponse.json();
-
-  return {
-    ...json,
-    ok: fetchResponse.ok,
-  };
-}
-
-export async function storeNewCommentByReportId(reportId, { body }) {
-  const accessToken = getAccessToken();
-  const data = JSON.stringify({ body });
-
-  const fetchResponse = await fetch(ENDPOINTS.STORE_NEW_REPORT_COMMENT(reportId), {
+  const fetchResponse = await fetch(ENDPOINTS.STORE_NEW_STORY_GUEST, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${accessToken}`,
-    },
-    body: data,
+    body: formData,
   });
+
   const json = await fetchResponse.json();
 
   return {
@@ -167,6 +148,7 @@ export async function storeNewCommentByReportId(reportId, { body }) {
   };
 }
 
+// Notification Functions
 export async function subscribePushNotification({ endpoint, keys: { p256dh, auth } }) {
   const accessToken = getAccessToken();
   const data = JSON.stringify({
@@ -182,6 +164,7 @@ export async function subscribePushNotification({ endpoint, keys: { p256dh, auth
     },
     body: data,
   });
+
   const json = await fetchResponse.json();
 
   return {
@@ -202,79 +185,7 @@ export async function unsubscribePushNotification({ endpoint }) {
     },
     body: data,
   });
-  const json = await fetchResponse.json();
-
-  return {
-    ...json,
-    ok: fetchResponse.ok,
-  };
-}
-
-export async function sendReportToMeViaNotification(reportId) {
-  const accessToken = getAccessToken();
-
-  const fetchResponse = await fetch(ENDPOINTS.SEND_REPORT_TO_ME(reportId), {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
-  });
-  const json = await fetchResponse.json();
-
-  return {
-    ...json,
-    ok: fetchResponse.ok,
-  };
-}
-
-export async function sendReportToUserViaNotification(reportId, { userId }) {
-  const accessToken = getAccessToken();
-  const data = JSON.stringify({
-    userId,
-  });
-
-  const fetchResponse = await fetch(ENDPOINTS.SEND_REPORT_TO_USER(reportId), {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${accessToken}`,
-    },
-    body: data,
-  });
-  const json = await fetchResponse.json();
-
-  return {
-    ...json,
-    ok: fetchResponse.ok,
-  };
-}
-
-export async function sendReportToAllUserViaNotification(reportId) {
-  const accessToken = getAccessToken();
-
-  const fetchResponse = await fetch(ENDPOINTS.SEND_REPORT_TO_ALL_USER(reportId), {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
-  });
-  const json = await fetchResponse.json();
-
-  return {
-    ...json,
-    ok: fetchResponse.ok,
-  };
-}
-
-export async function sendCommentToReportOwnerViaNotification(reportId, commentId) {
-  const accessToken = getAccessToken();
-
-  const fetchResponse = await fetch(ENDPOINTS.SEND_COMMENT_TO_REPORT_OWNER(reportId, commentId), {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
-  });
+  
   const json = await fetchResponse.json();
 
   return {

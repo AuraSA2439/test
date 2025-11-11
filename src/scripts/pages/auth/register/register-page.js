@@ -1,5 +1,5 @@
 import RegisterPresenter from './register-presenter';
-import * as CityCareAPI from '../../../data/api';
+import * as StorySharingAPI from '../../../data/api';
 
 export default class RegisterPage {
   #presenter = null;
@@ -47,7 +47,7 @@ export default class RegisterPage {
   async afterRender() {
     this.#presenter = new RegisterPresenter({
       view: this,
-      model: CityCareAPI,
+      model: StorySharingAPI,
     });
 
     this.#setupForm();

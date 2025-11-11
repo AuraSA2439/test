@@ -1,21 +1,18 @@
 import {
-  generateCommentsListEmptyTemplate,
-  generateCommentsListErrorTemplate,
   generateLoaderAbsoluteTemplate,
-  generateRemoveReportButtonTemplate,
-  generateReportCommentItemTemplate,
-  generateReportDetailErrorTemplate,
-  generateReportDetailTemplate,
-  generateSaveReportButtonTemplate,
+  generateRemovePostButtonTemplate,
+  generatePostDetailErrorTemplate,
+  generatePostDetailTemplate,
+  generateSavePostButtonTemplate,
 } from '../../templates';
 import { createCarousel } from '../../utils';
-import ReportDetailPresenter from './report-detail-presenter';
+import PostDetailPresenter from './post-detail-presenter';
 import { parseActivePathname } from '../../routes/url-parser';
 import Map from '../../utils/map';
-import * as CityCareAPI from '../../data/api';
+import * as StorySharingAPI from '../../data/api';
 import Database from '../../data/database';
 
-export default class ReportDetailPage {
+export default class PostDetailPage {
   #presenter = null;
   #form = null;
   #map = null;
@@ -23,70 +20,50 @@ export default class ReportDetailPage {
   async render() {
     return `
       <section>
-        <div class="report-detail__container">
-          <div id="report-detail" class="report-detail"></div>
-          <div id="report-detail-loading-container"></div>
-        </div>
-      </section>
-      
-      <section class="container">
-        <hr>
-        <div class="report-detail__comments__container">
-          <div class="report-detail__comments-form__container">
-            <h2 class="report-detail__comments-form__title">Beri Tanggapan</h2>
-            <form id="comments-list-form" class="report-detail__comments-form__form">
-              <textarea name="body" placeholder="Beri tanggapan terkait laporan."></textarea>
-              <div id="submit-button-container">
-                <button class="btn" type="submit">Tanggapi</button>
-              </div>
-            </form>
-          </div>
-          <hr>
-          <div class="report-detail__comments-list__container">
-            <div id="report-detail-comments-list"></div>
-            <div id="comments-list-loading-container"></div>
-          </div>
+        <div class="post-detail__container">
+          <div id="post-detail" class="post-detail"></div>
+          <div id="post-detail-loading-container"></div>
         </div>
       </section>
     `;
   }
 
   async afterRender() {
-    this.#presenter = new ReportDetailPresenter(parseActivePathname().id, {
+    this.#presenter = new PostDetailPresenter(parseActivePathname().id, {
       view: this,
-      apiModel: CityCareAPI,
+      apiModel: StorySharingAPI,
       dbModel: Database,
     });
 
-    this.#setupForm();
+    // this.#setupForm();
 
-    this.#presenter.showReportDetail();
-    this.#presenter.getCommentsList();
+    this.#presenter.showPostDetail();
+    // this.#presenter.getCommentsList();
   }
 
-  async populateReportDetailAndInitialMap(message, report) {
-    document.getElementById('report-detail').innerHTML = generateReportDetailTemplate({
-      title: report.title,
-      description: report.description,
-      damageLevel: report.damageLevel,
-      evidenceImages: report.evidenceImages,
-      location: report.location,
-      reporterName: report.reporter.name,
-      createdAt: report.createdAt,
+  async populatePostDetailAndInitialMap(message, post) {
+    document.getElementById('post-detail').innerHTML = generatePostDetailTemplate({
+      photoUrl: post.photoUrl,
+      description: post.description,
+      location: post.location || null,
+      lat: post.lat,
+      lon: post.lon,
+      posterName: post.name,
+      createdAt: post.createdAt,
     });
 
     // Carousel images
     createCarousel(document.getElementById('images'));
 
     // Map
-    await this.#presenter.showReportDetailMap();
+    await this.#presenter.showPostDetailMap();
     if (this.#map) {
-      const reportCoordinate = [report.location.latitude, report.location.longitude];
-      const markerOptions = { alt: report.title };
-      const popupOptions = { content: report.title };
+      const postCoordinate = [post.lat, post.lon];
+      const markerOptions = { alt: post.description };
+      const popupOptions = { content: post.description };
 
-      this.#map.changeCamera(reportCoordinate);
-      this.#map.addMarker(reportCoordinate, markerOptions, popupOptions);
+      this.#map.changeCamera(postCoordinate);
+      this.#map.addMarker(postCoordinate, markerOptions, popupOptions);
     }
 
     // Actions buttons
@@ -94,41 +71,8 @@ export default class ReportDetailPage {
     this.addNotifyMeEventListener();
   }
 
-  populateReportDetailError(message) {
-    document.getElementById('report-detail').innerHTML = generateReportDetailErrorTemplate(message);
-  }
-
-  populateReportDetailComments(message, comments) {
-    if (comments.length <= 0) {
-      this.populateCommentsListEmpty();
-      return;
-    }
-
-    const html = comments.reduce(
-      (accumulator, comment) =>
-        accumulator.concat(
-          generateReportCommentItemTemplate({
-            photoUrlCommenter: comment.commenter.photoUrl,
-            nameCommenter: comment.commenter.name,
-            body: comment.body,
-          }),
-        ),
-      '',
-    );
-
-    document.getElementById('report-detail-comments-list').innerHTML = `
-      <div class="report-detail__comments-list">${html}</div>
-    `;
-  }
-
-  populateCommentsListEmpty() {
-    document.getElementById('report-detail-comments-list').innerHTML =
-      generateCommentsListEmptyTemplate();
-  }
-
-  populateCommentsListError(message) {
-    document.getElementById('report-detail-comments-list').innerHTML =
-      generateCommentsListErrorTemplate(message);
+  populatePostDetailError(message) {
+    document.getElementById('post-detail').innerHTML = generatePostDetailErrorTemplate(message);
   }
 
   async initialMap() {
@@ -137,40 +81,20 @@ export default class ReportDetailPage {
     });
   }
 
-  #setupForm() {
-    this.#form = document.getElementById('comments-list-form');
-    this.#form.addEventListener('submit', async (event) => {
-      event.preventDefault();
-
-      const data = {
-        body: this.#form.elements.namedItem('body').value,
-      };
-      await this.#presenter.postNewComment(data);
-    });
-  }
-
-  postNewCommentSuccessfully(message) {
-    console.log(message);
-
-    this.#presenter.getCommentsList();
-    this.clearForm();
-  }
-
-  postNewCommentFailed(message) {
-    alert(message);
-  }
-
   clearForm() {
     this.#form.reset();
   }
 
   renderSaveButton() {
     document.getElementById('save-actions-container').innerHTML =
-      generateSaveReportButtonTemplate();
+      generateSavePostButtonTemplate();
 
-    document.getElementById('report-detail-save').addEventListener('click', async () => {
-      await this.#presenter.saveReport();
-      // await this.#presenter.showSaveButton();
+    const saveButton = document.getElementById('post-detail-save');
+    saveButton.addEventListener('click', async () => {
+      await this.#presenter.savePost();
+      await this.#presenter.showSaveButton();
+
+      saveButton.style.backgroundColor = "red";
     });
   }
 
@@ -184,10 +108,10 @@ export default class ReportDetailPage {
 
   renderRemoveButton() {
     document.getElementById('save-actions-container').innerHTML =
-      generateRemoveReportButtonTemplate();
+      generateRemovePostButtonTemplate();
 
-    document.getElementById('report-detail-remove').addEventListener('click', async () => {
-      await this.#presenter.removeReport();
+    document.getElementById('post-detail-remove').addEventListener('click', async () => {
+      await this.#presenter.removePost();
       await this.#presenter.showSaveButton();
     });
   }
@@ -201,18 +125,18 @@ export default class ReportDetailPage {
   }
 
   addNotifyMeEventListener() {
-    document.getElementById('report-detail-notify-me').addEventListener('click', () => {
+    document.getElementById('post-detail-notify-me').addEventListener('click', () => {
       this.#presenter.notifyMe();
     });
   }
 
-  showReportDetailLoading() {
-    document.getElementById('report-detail-loading-container').innerHTML =
+  showPostDetailLoading() {
+    document.getElementById('post-detail-loading-container').innerHTML =
       generateLoaderAbsoluteTemplate();
   }
 
-  hideReportDetailLoading() {
-    document.getElementById('report-detail-loading-container').innerHTML = '';
+  hidePostDetailLoading() {
+    document.getElementById('post-detail-loading-container').innerHTML = '';
   }
 
   showMapLoading() {
@@ -221,15 +145,6 @@ export default class ReportDetailPage {
 
   hideMapLoading() {
     document.getElementById('map-loading-container').innerHTML = '';
-  }
-
-  showCommentsLoading() {
-    document.getElementById('comments-list-loading-container').innerHTML =
-      generateLoaderAbsoluteTemplate();
-  }
-
-  hideCommentsLoading() {
-    document.getElementById('comments-list-loading-container').innerHTML = '';
   }
 
   showSubmitLoadingButton() {
